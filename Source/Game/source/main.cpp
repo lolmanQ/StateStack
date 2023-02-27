@@ -8,6 +8,9 @@
 #include <CommonUtilities/Common/Time.h>
 #include <CommonUtilities/Math/Random.h>
 
+#include "StateStack.h"
+#include "StateStackProxy.h"
+
 void Go(void);
 
 int main(const int /*argc*/, const char* /*argc*/[])
@@ -37,20 +40,35 @@ void Go()
 	{
 		Tga::Engine& engine = *Tga::Engine::GetInstance();
 		
+		StateStack stateStack;
+		StateStackProxy stateStackProxy(stateStack);
+		
+		stateStackProxy.Init();
+		
+		stateStack.PushState(StateID::Menu);
+
 		GameWorld gameWorld;
 		
 		gameWorld.Init(engine);
 
-		Tga::SpriteDrawer& spriteDrawer(engine.GetGraphicsEngine().GetSpriteDrawer());
+		//Tga::SpriteDrawer& spriteDrawer(engine.GetGraphicsEngine().GetSpriteDrawer());
 		
-		while (engine.BeginFrame()) {
+		while (engine.BeginFrame() && stateStack.size() > 0) {
 			CU::Time::Update();
-			
-			gameWorld.Update();
+
+			bool stateReturnValue = stateStack.GetCurrentState()->Update();
+
+			//gameWorld.Update();
 
 			CU::Input::Update();
-			gameWorld.Render(spriteDrawer);
+			//gameWorld.Render(spriteDrawer);
 			
+			stateStack.RenderStateAtIndex(stateStack.size() - 1);
+
+			if (stateReturnValue == false)
+			{
+				stateStack.Pop();
+			}
 			engine.EndFrame();
 		}
 	}
